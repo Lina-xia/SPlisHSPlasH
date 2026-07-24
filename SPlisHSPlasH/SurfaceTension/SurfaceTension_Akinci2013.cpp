@@ -1,11 +1,55 @@
 #include "SurfaceTension_Akinci2013.h"
 #include <iostream>
 #include "../Simulation.h"
+#include "SPlisHSPlasH/TimeManager.h"
 #include "SPlisHSPlasH/BoundaryModel_Akinci2012.h"
 #include "SPlisHSPlasH/BoundaryModel_Koschier2017.h"
 #include "SPlisHSPlasH/BoundaryModel_Bender2019.h"
 
 using namespace SPH;
+
+namespace
+{
+	void addProjectedCapillaryAcceleration(
+		Vector3r &ai,
+		const Vector3r &boundaryNormal,
+		const Real adhesionScale,
+		const Real kernelWeight,
+		const Real capillaryStrength,
+		const Vector3r &capillaryDirection,
+		const Real capillaryForwardStrength,
+		const Vector3r &capillaryForwardDirection)
+	{
+		if ((kernelWeight <= static_cast<Real>(0.0)) || (adhesionScale <= static_cast<Real>(0.0)))
+			return;
+
+		const Real normalLength2 = boundaryNormal.squaredNorm();
+		if (normalLength2 <= static_cast<Real>(1.0e-9))
+			return;
+		const Vector3r n = (static_cast<Real>(1.0) / sqrt(normalLength2)) * boundaryNormal;
+
+		const auto addProjectedDirection = [&](const Vector3r &direction, const Real strength)
+		{
+			if (strength <= static_cast<Real>(0.0))
+				return;
+
+			const Real directionLength2 = direction.squaredNorm();
+			if (directionLength2 <= static_cast<Real>(1.0e-9))
+				return;
+
+			Vector3r tangent = direction - direction.dot(n) * n;
+			const Real tangentLength2 = tangent.squaredNorm();
+			if (tangentLength2 <= static_cast<Real>(1.0e-9))
+				return;
+
+			tangent = (static_cast<Real>(1.0) / sqrt(tangentLength2)) * tangent;
+			ai += adhesionScale * kernelWeight * strength * tangent;
+		};
+
+		addProjectedDirection(capillaryDirection, capillaryStrength);
+		addProjectedDirection(capillaryForwardDirection, capillaryForwardStrength);
+	}
+}
 
 SurfaceTension_Akinci2013::SurfaceTension_Akinci2013(FluidModel *model) :
 	SurfaceTensionBase(model)
@@ -61,7 +105,13 @@ void SurfaceTension_Akinci2013::step()
 	const Real supportRadius = sim->getSupportRadius();
 	const unsigned int numParticles = m_model->numActiveParticles();
 	const Real k = m_surfaceTension;
-	const Real kb = m_surfaceTensionBoundary;
+	const Real kb = m_surfaceTensionBoundary; // Adhesion strength coefficient.
+	const Real boundaryRepulsionDistance = static_cast<Real>(1.5) * sim->getParticleRadius();
+	const Real boundaryRepulsionDistance2 = boundaryRepulsionDistance * boundaryRepulsionDistance;
+	const Real boundaryRepulsionInvDistance = static_cast<Real>(1.0) / boundaryRepulsionDistance;
+	const Real timeStepSize = TimeManager::getCurrent()->getTimeStepSize();
+	const Real timeStepSize2 = timeStepSize * timeStepSize;
+	const Real boundaryRepulsionScale = (timeStepSize2 > static_cast<Real>(1.0e-12)) ? static_cast<Real>(0.05) / timeStepSize2 : static_cast<Real>(0.0);
 	const unsigned int fluidModelIndex = m_model->getPointSetIndex();
 	const unsigned int nFluids = sim->numberOfFluidModels();
 	const unsigned int nBoundaries = sim->numberOfBoundaryModels();
@@ -112,37 +162,97 @@ void SurfaceTension_Akinci2013::step()
 			if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Akinci2012)
 			{
 				forall_boundary_neighbors(
-					// adhesion force					
-					Vector3r xixj = (xi - xj);
-					const Real length2 = xixj.squaredNorm();
-					if (length2 > 1.0e-9)
+					if (bm_neighbor->isWall())
 					{
-						xixj = ((Real) 1.0 / sqrt(length2)) * xixj;
-						ai -= kb * density0 * bm_neighbor->getVolume(neighborIndex) * xixj * AdhesionKernel::W(xi - xj);
+						const Real boundaryAdhesionScale = bm_neighbor->getAdhesionScale();
+						const Real boundaryAdhesion = kb * boundaryAdhesionScale;
+
+						// adhesion force
+						Vector3r xixj = (xi - xj);
+						const Real length2 = xixj.squaredNorm();
+						if (length2 > 1.0e-9)
+						{
+							const Real length = sqrt(length2);
+							xixj = ((Real) 1.0 / length) * xixj;
+
+							// Numerical guard against fluid particles entering particle boundaries.
+							if (length2 < boundaryRepulsionDistance2)
+							{
+								const Real overlap = boundaryRepulsionDistance - length;
+								const Real q = overlap * boundaryRepulsionInvDistance;
+								const Real volumeRatio = bm_neighbor->getVolume(neighborIndex) / m_model->getVolume(i);
+								ai += boundaryRepulsionScale * overlap * q * q * volumeRatio * xixj;
+							}
+
+							ai -= boundaryAdhesion * density0 * bm_neighbor->getVolume(neighborIndex) * xixj * AdhesionKernel::W(xi - xj);
+
+							const Real capillaryWeight = (bm_neighbor->getVolume(neighborIndex) / m_model->getVolume(i)) * sim->W(xi - xj) / sim->W_zero();
+							addProjectedCapillaryAcceleration(
+								ai,
+								xixj,
+								boundaryAdhesionScale,
+								capillaryWeight,
+								bm_neighbor->getCapillaryStrength(),
+								bm_neighbor->getCapillaryDirection(),
+								bm_neighbor->getCapillaryForwardStrength(),
+								bm_neighbor->getCapillaryForwardDirection());
+						}
 					}
 				);
 			}
 			else if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Koschier2017)
 			{
 				forall_density_maps(
-					Vector3r xixj = xi - xj;
-					const Real length2 = xixj.squaredNorm();
-					if (length2 > 1.0e-9)
+					if (bm_neighbor->isWall())
 					{
-						xixj = ((Real) 1.0 / sqrt(length2)) * xixj;
-						ai -= kb * density0 * xixj * rho * AdhesionKernel::W_zero() / sim->W_zero();
+						const Real boundaryAdhesionScale = bm_neighbor->getAdhesionScale();
+						const Real boundaryAdhesion = kb * boundaryAdhesionScale;
+						Vector3r xixj = xi - xj;
+						const Real length2 = xixj.squaredNorm();
+						if (length2 > 1.0e-9)
+						{
+							xixj = ((Real) 1.0 / sqrt(length2)) * xixj;
+							ai -= boundaryAdhesion * density0 * xixj * rho * AdhesionKernel::W_zero() / sim->W_zero();
+
+							const Real capillaryWeight = rho / density0;
+							addProjectedCapillaryAcceleration(
+								ai,
+								xixj,
+								boundaryAdhesionScale,
+								capillaryWeight,
+								bm_neighbor->getCapillaryStrength(),
+								bm_neighbor->getCapillaryDirection(),
+								bm_neighbor->getCapillaryForwardStrength(),
+								bm_neighbor->getCapillaryForwardDirection());
+						}
 					}
 				);
 			}
 			else if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Bender2019)
 			{
 				forall_volume_maps(
-					Vector3r xixj = (xi - xj);
-					const Real length2 = xixj.squaredNorm();
-					if (length2 > 1.0e-9)
+					if (bm_neighbor->isWall())
 					{
-						xixj = ((Real) 1.0 / sqrt(length2)) * xixj;
-						ai -= kb * Vj * density0 * xixj * AdhesionKernel::W(xi - xj);
+						const Real boundaryAdhesionScale = bm_neighbor->getAdhesionScale();
+						const Real boundaryAdhesion = kb * boundaryAdhesionScale;
+						Vector3r xixj = (xi - xj);
+						const Real length2 = xixj.squaredNorm();
+						if (length2 > 1.0e-9)
+						{
+							xixj = ((Real) 1.0 / sqrt(length2)) * xixj;
+							ai -= boundaryAdhesion * Vj * density0 * xixj * AdhesionKernel::W(xi - xj);
+
+							const Real capillaryWeight = (Vj / m_model->getVolume(i)) * sim->W(xi - xj) / sim->W_zero();
+							addProjectedCapillaryAcceleration(
+								ai,
+								xixj,
+								boundaryAdhesionScale,
+								capillaryWeight,
+								bm_neighbor->getCapillaryStrength(),
+								bm_neighbor->getCapillaryDirection(),
+								bm_neighbor->getCapillaryForwardStrength(),
+								bm_neighbor->getCapillaryForwardDirection());
+						}
 					}
 				);
 			}

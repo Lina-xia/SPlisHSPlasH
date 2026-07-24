@@ -22,6 +22,12 @@ namespace SPH
 
 		protected:
 			RigidBodyObject *m_rigidBody;
+			bool m_isWall;
+			Real m_adhesionScale;
+			Real m_capillaryStrength;
+			Vector3r m_capillaryDirection;
+			Real m_capillaryForwardStrength;
+			Vector3r m_capillaryForwardDirection;
 			std::vector<Vector3r> m_forcePerThread;
 			std::vector<Vector3r> m_torquePerThread;
 
@@ -34,6 +40,18 @@ namespace SPH
 			virtual void loadState(BinaryFileReader &binReader) {};
 
 			RigidBodyObject* getRigidBodyObject() { return m_rigidBody; }
+			bool isWall() const { return m_isWall; }
+			void setIsWall(const bool val) { m_isWall = val; }
+			Real getAdhesionScale() const { return m_adhesionScale; }
+			void setAdhesionScale(const Real val) { m_adhesionScale = val; }
+			Real getCapillaryStrength() const { return m_capillaryStrength; }
+			void setCapillaryStrength(const Real val) { m_capillaryStrength = val; }
+			const Vector3r& getCapillaryDirection() const { return m_capillaryDirection; }
+			void setCapillaryDirection(const Vector3r &val) { m_capillaryDirection = val; }
+			Real getCapillaryForwardStrength() const { return m_capillaryForwardStrength; }
+			void setCapillaryForwardStrength(const Real val) { m_capillaryForwardStrength = val; }
+			const Vector3r& getCapillaryForwardDirection() const { return m_capillaryForwardDirection; }
+			void setCapillaryForwardDirection(const Vector3r &val) { m_capillaryForwardDirection = val; }
 
 			FORCE_INLINE void addForce(const Vector3r &pos, const Vector3r &f)
 			{

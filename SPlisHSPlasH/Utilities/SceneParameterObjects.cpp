@@ -316,6 +316,11 @@ int BoundaryParameterObject::BOUNDARY_ANGLE = -1;
 int BoundaryParameterObject::BOUNDARY_SCALE = -1;
 int BoundaryParameterObject::BOUNDARY_DYNAMIC = -1;
 int BoundaryParameterObject::BOUNDARY_IS_WALL = -1;
+int BoundaryParameterObject::BOUNDARY_ADHESION_SCALE = -1;
+int BoundaryParameterObject::BOUNDARY_CAPILLARY_STRENGTH = -1;
+int BoundaryParameterObject::BOUNDARY_CAPILLARY_DIRECTION = -1;
+int BoundaryParameterObject::BOUNDARY_CAPILLARY_FORWARD_STRENGTH = -1;
+int BoundaryParameterObject::BOUNDARY_CAPILLARY_FORWARD_DIRECTION = -1;
 int BoundaryParameterObject::BOUNDARY_COLOR = -1;
 int BoundaryParameterObject::BOUNDARY_MAP_FILE = -1;
 int BoundaryParameterObject::BOUNDARY_MAP_INVERT = -1;
@@ -357,6 +362,26 @@ void BoundaryParameterObject::initParameters()
 	BOUNDARY_IS_WALL = createBoolParameter("isWall", "Wall", &isWall);
 	setGroup(BOUNDARY_IS_WALL, "Boundary");
 	setDescription(BOUNDARY_IS_WALL, "Defines if this is a wall. Walls are typically not rendered. This is the only difference.");
+
+	BOUNDARY_ADHESION_SCALE = createNumericParameter<Real>("adhesionScale", "Adhesion scale", &adhesionScale);
+	setGroup(BOUNDARY_ADHESION_SCALE, "Boundary");
+	setDescription(BOUNDARY_ADHESION_SCALE, "Scale factor for the fluid-boundary adhesion strength of this rigid body.");
+
+	BOUNDARY_CAPILLARY_STRENGTH = createNumericParameter<Real>("capillaryStrength", "Capillary strength", &capillaryStrength);
+	setGroup(BOUNDARY_CAPILLARY_STRENGTH, "Boundary");
+	setDescription(BOUNDARY_CAPILLARY_STRENGTH, "Tangential capillary correction acceleration scale before boundary kernel weighting.");
+
+	BOUNDARY_CAPILLARY_DIRECTION = createVectorParameter("capillaryDirection", "Capillary direction", 3u, capillaryDirection.data());
+	setGroup(BOUNDARY_CAPILLARY_DIRECTION, "Boundary");
+	setDescription(BOUNDARY_CAPILLARY_DIRECTION, "World-space direction of the capillary filling correction before tangential projection.");
+
+	BOUNDARY_CAPILLARY_FORWARD_STRENGTH = createNumericParameter<Real>("capillaryForwardStrength", "Capillary forward strength", &capillaryForwardStrength);
+	setGroup(BOUNDARY_CAPILLARY_FORWARD_STRENGTH, "Boundary");
+	setDescription(BOUNDARY_CAPILLARY_FORWARD_STRENGTH, "Tangential capillary correction acceleration scale for forward contact-line motion before boundary kernel weighting.");
+
+	BOUNDARY_CAPILLARY_FORWARD_DIRECTION = createVectorParameter("capillaryForwardDirection", "Capillary forward direction", 3u, capillaryForwardDirection.data());
+	setGroup(BOUNDARY_CAPILLARY_FORWARD_DIRECTION, "Boundary");
+	setDescription(BOUNDARY_CAPILLARY_FORWARD_DIRECTION, "World-space forward direction of the capillary correction before tangential projection.");
 
 	BOUNDARY_COLOR = createVectorParameter("color", "Color", 4u, color.data());
 	setGroup(BOUNDARY_COLOR, "Boundary");

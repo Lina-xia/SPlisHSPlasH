@@ -331,6 +331,11 @@ namespace Utilities
 		Vector3r scale;
 		bool dynamic;
 		bool isWall;
+		Real adhesionScale;
+		Real capillaryStrength;
+		Vector3r capillaryDirection;
+		Real capillaryForwardStrength;
+		Vector3r capillaryForwardDirection;
 		Vector4r color;
 		std::string mapFile;
 		bool mapInvert;
@@ -350,6 +355,11 @@ namespace Utilities
 			scale = Vector3r::Ones();
 			dynamic = false;
 			isWall = false;
+			adhesionScale = 1.0;
+			capillaryStrength = 0.0;
+			capillaryDirection = Vector3r(0, 1, 0);
+			capillaryForwardStrength = 0.0;
+			capillaryForwardDirection = Vector3r(0, 0, 1);
 			color = Vector4r(1.0, 0.0, 0.0, 0.0);
 			samplingMode = 0;
 			isAnimated = false;
@@ -361,7 +371,9 @@ namespace Utilities
 		}
 
 		BoundaryParameterObject(std::string samplesFile_, std::string meshFile_, Vector3r translation_, Vector3r axis_, Real angle_, Vector3r scale_,
-								bool dynamic_, bool isWall_, Vector4r color_, std::string mapFile_, bool mapInvert_,
+								bool dynamic_, bool isWall_, Real adhesionScale_, Real capillaryStrength_, Vector3r capillaryDirection_,
+								Real capillaryForwardStrength_, Vector3r capillaryForwardDirection_,
+								Vector4r color_, std::string mapFile_, bool mapInvert_,
 								Real mapThickness_, Eigen::Matrix<unsigned int, 3, 1, Eigen::DontAlign> mapResolution_, unsigned int samplingMode_, bool isAnimated_)
 		{
 			samplesFile = samplesFile_;
@@ -372,6 +384,11 @@ namespace Utilities
 			scale = scale_;
 			dynamic = dynamic_;
 			isWall = isWall_;
+			adhesionScale = adhesionScale_;
+			capillaryStrength = capillaryStrength_;
+			capillaryDirection = capillaryDirection_;
+			capillaryForwardStrength = capillaryForwardStrength_;
+			capillaryForwardDirection = capillaryForwardDirection_;
 			color = color_;
 			samplingMode = samplingMode_;
 			isAnimated = isAnimated_;
@@ -390,6 +407,11 @@ namespace Utilities
 		static int BOUNDARY_SCALE;
 		static int BOUNDARY_DYNAMIC;
 		static int BOUNDARY_IS_WALL;
+		static int BOUNDARY_ADHESION_SCALE;
+		static int BOUNDARY_CAPILLARY_STRENGTH;
+		static int BOUNDARY_CAPILLARY_DIRECTION;
+		static int BOUNDARY_CAPILLARY_FORWARD_STRENGTH;
+		static int BOUNDARY_CAPILLARY_FORWARD_DIRECTION;
 		static int BOUNDARY_COLOR;
 		static int BOUNDARY_MAP_FILE;
 		static int BOUNDARY_MAP_INVERT;

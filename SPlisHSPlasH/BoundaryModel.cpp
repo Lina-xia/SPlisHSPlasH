@@ -11,6 +11,13 @@ using namespace SPH;
 
 
 BoundaryModel::BoundaryModel() :
+	m_rigidBody(nullptr),
+	m_isWall(true),
+	m_adhesionScale(static_cast<Real>(1.0)),
+	m_capillaryStrength(static_cast<Real>(0.0)),
+	m_capillaryDirection(Vector3r(0, 1, 0)),
+	m_capillaryForwardStrength(static_cast<Real>(0.0)),
+	m_capillaryForwardDirection(Vector3r(0, 0, 1)),
 	m_forcePerThread(),
 	m_torquePerThread()
 {		

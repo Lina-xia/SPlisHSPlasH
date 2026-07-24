@@ -197,12 +197,24 @@ void PBDBoundarySimulator::initBoundaryData()
 			}
 
 			BoundaryModel_Akinci2012 *bm = new BoundaryModel_Akinci2012();
+			bm->setIsWall(scene.boundaryModels[i]->isWall);
+			bm->setAdhesionScale(scene.boundaryModels[i]->adhesionScale);
+			bm->setCapillaryStrength(scene.boundaryModels[i]->capillaryStrength);
+			bm->setCapillaryDirection(scene.boundaryModels[i]->capillaryDirection);
+			bm->setCapillaryForwardStrength(scene.boundaryModels[i]->capillaryForwardStrength);
+			bm->setCapillaryForwardDirection(scene.boundaryModels[i]->capillaryForwardDirection);
 			bm->initModel(rb, static_cast<unsigned int>(boundaryParticles.size()), &boundaryParticles[0]);
 			sim->addBoundaryModel(bm);
 		}
 		else if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Koschier2017)
 		{
 			BoundaryModel_Koschier2017 *bm = new BoundaryModel_Koschier2017();
+			bm->setIsWall(scene.boundaryModels[i]->isWall);
+			bm->setAdhesionScale(scene.boundaryModels[i]->adhesionScale);
+			bm->setCapillaryStrength(scene.boundaryModels[i]->capillaryStrength);
+			bm->setCapillaryDirection(scene.boundaryModels[i]->capillaryDirection);
+			bm->setCapillaryForwardStrength(scene.boundaryModels[i]->capillaryForwardStrength);
+			bm->setCapillaryForwardDirection(scene.boundaryModels[i]->capillaryForwardDirection);
 			bm->initModel(rb);
 			sim->addBoundaryModel(bm);
 
@@ -220,6 +232,12 @@ void PBDBoundarySimulator::initBoundaryData()
 		else if (sim->getBoundaryHandlingMethod() == BoundaryHandlingMethods::Bender2019)
 		{
 			BoundaryModel_Bender2019 *bm = new BoundaryModel_Bender2019();
+			bm->setIsWall(scene.boundaryModels[i]->isWall);
+			bm->setAdhesionScale(scene.boundaryModels[i]->adhesionScale);
+			bm->setCapillaryStrength(scene.boundaryModels[i]->capillaryStrength);
+			bm->setCapillaryDirection(scene.boundaryModels[i]->capillaryDirection);
+			bm->setCapillaryForwardStrength(scene.boundaryModels[i]->capillaryForwardStrength);
+			bm->setCapillaryForwardDirection(scene.boundaryModels[i]->capillaryForwardDirection);
 			bm->initModel(rb);
 			sim->addBoundaryModel(bm);
 
